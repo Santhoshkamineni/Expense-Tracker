@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 420px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+h1 { text-align: center; }
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    margin: 15px 0;
+}
+
+.income, .expense {
+    width: 48%;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.income { background: #eafaf1; border: 1px solid #2ecc71; }
+.expense { background: #fdecea; border: 1px solid #e74c3c; }
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+ul { list-style: none; padding: 0; }
+
+li {
+    background: #f9f9f9;
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 5px solid;
+    display: flex;
+    justify-content: space-between;
+}
+
+.plus { border-color: #2ecc71; }
+.minus { border-color: #e74c3c; }
+
+.actions { display: flex; gap: 5px; }
+
+.edit-btn { background: orange; border: none; color: white; padding: 4px 8px; }
+.delete-btn { background: red; border: none; color: white; padding: 4px 8px; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>💰 Expense Tracker</h1>
+
+    <h2 id="balance">₹0</h2>
+
+    <div class="summary">
+        <div class="income">
+            <h4>Income</h4>
+            <p id="income">₹0</p>
+        </div>
+        <div class="expense">
+            <h4>Expense</h4>
+            <p id="expense">₹0</p>
+        </div>
+    </div>
+
+    <input type="text" id="text" placeholder="Description">
+
+    <select id="category">
+        <option>General</option>
+        <option>Food</option>
+        <option>Travel</option>
+        <option>Shopping</option>
+        <option>Salary</option>
+    </select>
+
+    <input type="date" id="date">
+    <input type="number" id="amount" placeholder="Amount (+income, -expense)">
+
+    <button onclick="addTransaction()">Add Transaction</button>
+
+    <ul id="list"></ul>
+</div>
+
+<script>
+const balance = document.getElementById('balance');
+const income = document.getElementById('income');
+const expense = document.getElementById('expense');
+const list = document.getElementById('list');
+
+let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+
+function addTransaction() {
+    const text = document.getElementById('text').value.trim();
+    const category = document.getElementById('category').value;
+    const date = document.getElementById('date').value;
+    const amount = +document.getElementById('amount').value;
+
+    if (!text || !date || !amount) {
+        alert("Enter valid details");
+        return;
+    }
+
+    const transaction = { id: Date.now(), text, category, date, amount };
+
+    transactions.push(transaction);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    init();
+
+    document.getElementById('text').value = "";
+    document.getElementById('amount').value = "";
+}
+
+function addToDOM(t) {
+    const li = document.createElement('li');
+    li.className = t.amount < 0 ? "minus" : "plus";
+
+    li.innerHTML = `
+        <div>
+            <strong>${t.text}</strong><br>
+            <small>${t.category} | ${t.date}</small>
+        </div>
+        <div class="actions">
+            ₹${Math.abs(t.amount)}
+            <button class="edit-btn" onclick="editTransaction(${t.id})">Edit</button>
+            <button class="delete-btn" onclick="removeTransaction(${t.id})">X</button>
+        </div>
+    `;
+
+    list.appendChild(li);
+}
+
+function updateValues() {
+    const amounts = transactions.map(t => t.amount);
+
+    const total = amounts.reduce((a,b) => a+b, 0);
+    const inc = amounts.filter(a => a>0).reduce((a,b)=>a+b,0);
+    const exp = amounts.filter(a => a<0).reduce((a,b)=>a+b,0) * -1;
+
+    balance.innerText = "₹" + total;
+    income.innerText = "₹" + inc;
+    expense.innerText = "₹" + exp;
+}
+
+function removeTransaction(id) {
+    transactions = transactions.filter(t => t.id !== id);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    init();
+}
+
+function editTransaction(id) {
+    const t = transactions.find(t => t.id === id);
+
+    document.getElementById('text').value = t.text;
+    document.getElementById('amount').value = t.amount;
+    document.getElementById('date').value = t.date;
+    document.getElementById('category').value = t.category;
+
+    removeTransaction(id);
+}
+
+function init() {
+    list.innerHTML = "";
+    transactions.forEach(addToDOM);
+    updateValues();
+}
+
+init();
+</script>
+
+</body>
+</html>
